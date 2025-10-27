@@ -53,16 +53,24 @@ real-time-stocks-pipeline/
 │   └── consumer.py
 ├── dbt_stocks/models/
 │   ├── bronze
-│   │   ├── bronze_stg_stock_quotes.sql
-│   │   └── sources.yml
+│       ├── stg_daily_historical_quotes_raw.sql
+│       ├── stg_stock_quotes_raw.sql
+│       └── stg_ytd_historical_quotes_raw.sql
 │   ├── silver
-│   │   └── silver_clean_stock_quotes.sql
+│       ├── dim_stock_symbols.sql
+│       ├── stg_historical_quotes_cleaned.sql
+│       └── stg_stock_quotes_cleaned.sql
 │   └── gold
-│       ├── gold_candlestick.sql
-│       ├── gold_kpi.sql
-│       └── gold_treechart.sql
+│       ├── dim_date.sql
+│       ├── dim_time.sql
+│       ├── fact_daily_stock_quotes.sql
+│       └── fact_stock_performance.sql
 ├── dag/
-│   └── minio_to_snowflake.py
+│       ├── backfill_ytd_historical.py
+│       ├── daily_historical_load.py
+│       └── minio_to_snowflake.py
 ├── docker-compose.yml            # Configuration for Kafka, Airflow, MinIO, Postgres
+├── Dockerfile.consumer
+├── Dockerfile.producer
 ├── requirements.txt
 └── README.md
