@@ -1,0 +1,373 @@
+version: 2
+
+sources:
+  - name: stocks
+    description: Stock market data from MinIO and Snowflake
+    database: STOCKS_MDS
+    schema: COMMON
+    tables:
+      - name: BRONZE_STOCK_QUOTES_RAW
+        description: Raw stock quote data loaded from MinIO JSON files
+        columns:
+          - name: symbol
+            description: Stock ticker symbol (e.g., NVDA, AMD)
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['PANW', 'AMZN', 'AVGO', 'AMD', 'NVDA','TSM']
+          - name: close_price
+            description: Closing price for the period
+            tests:
+              - not_null
+          - name: quote_timestamp
+            description: When the quote was generated
+            tests:
+              - not_null
+      
+      - name: DAILY_HISTORICAL_QUOTES
+        description: Daily historical stock quote data
+        columns:
+          - name: symbol
+            description: Stock ticker symbol
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['PANW', 'AMZN', 'AVGO', 'AMD', 'NVDA','TSM']
+          - name: date
+            description: Date of the quote
+            tests:
+              - not_null
+          - name: close_price
+            description: Closing price for the day
+            tests:
+              - not_null
+          - name: volume
+            description: Trading volume
+      
+      - name: YTD_HISTORICAL_QUOTES
+        description: Year-to-date historical stock quote data
+        columns:
+          - name: symbol
+            description: Stock ticker symbol
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['PANW', 'AMZN', 'AVGO', 'AMD', 'NVDA','TSM']
+          - name: date
+            description: Date of the quote
+            tests:
+              - not_null
+          - name: close_price
+            description: Closing price for the day
+            tests:
+              - not_null
+          - name: volume
+            description: Trading volume
+      
+      - name: PROCESSED_FILES_AUDIT
+        description: Audit trail of processed files from MinIO
+        columns:
+          - name: file_name
+            description: Name of the processed file
+            tests:
+              - not_null
+          - name: file_hash
+            description: MD5 hash of the file for deduplication
+            tests:
+              - not_null
+              - unique
+
+models:
+  # Bronze Layer
+  - name: stg_audit_trail
+    description: Audit trail of file processing from MinIO
+    columns:
+      - name: file_name
+        description: Name of the processed file
+        tests:
+          - not_null
+      - name: file_hash
+        description: MD5 hash of the file for deduplication
+        tests:
+          - not_null
+          - unique
+      - name: created_at
+        description: When the audit record was created
+        tests:
+          - not_null
+
+  - name: stg_stock_quotes_raw
+    description: Raw stock quotes from real-time feed with minimal transformations
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: close_price
+        description: Closing price
+        tests:
+          - not_null
+      - name: quote_timestamp
+        description: Quote timestamp
+        tests:
+          - not_null
+      - name: rn
+        description: Row number for deduplication
+
+  - name: stg_daily_historical_quotes_raw
+    description: Raw daily historical quotes with minimal transformations
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: quote_date
+        description: Date of the quote
+        tests:
+          - not_null
+      - name: close_price
+        description: Closing price
+        tests:
+          - not_null
+      - name: volume
+        description: Trading volume
+      - name: rn
+        description: Row number for deduplication
+
+  - name: stg_ytd_historical_quotes_raw
+    description: Raw year-to-date historical quotes with minimal transformations
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: quote_date
+        description: Date of the quote
+        tests:
+          - not_null
+      - name: close_price
+        description: Closing price
+        tests:
+          - not_null
+      - name: volume
+        description: Trading volume
+      - name: rn
+        description: Row number for deduplication
+
+  # Silver Layer
+  - name: stg_stock_quotes_cleaned
+    description: Cleaned and validated real-time stock quotes with data quality flags
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: quote_date
+        description: Quote date
+        tests:
+          - not_null
+      - name: quote_timestamp
+        description: Full timestamp of quote
+      - name: open_price_validated
+        description: Validated opening price
+      - name: high_price_validated
+        description: Validated high price
+      - name: low_price_validated
+        description: Validated low price
+      - name: close_price_validated
+        description: Validated closing price
+        tests:
+          - not_null
+      - name: price_change_percent_validated
+        description: Validated price change percentage
+      - name: data_quality_flag
+        description: Data quality assessment (VALID, INVALID, INCONSISTENT, OUTLIER)
+        tests:
+          - accepted_values:
+              values: ['VALID', 'INVALID', 'INCONSISTENT', 'OUTLIER']
+
+  - name: stg_historical_quotes_cleaned
+    description: Combined and cleaned historical quotes from daily and YTD sources
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: quote_date
+        description: Date of quote
+        tests:
+          - not_null
+      - name: open_price_validated
+        description: Validated opening price
+      - name: high_price_validated
+        description: Validated high price
+      - name: low_price_validated
+        description: Validated low price
+      - name: close_price_validated
+        description: Validated closing price
+        tests:
+          - not_null
+      - name: volume
+        description: Trading volume
+      - name: data_quality_flag
+        description: Data quality assessment (VALID, INVALID, INCONSISTENT)
+        tests:
+          - accepted_values:
+              values: ['VALID', 'INVALID', 'INCONSISTENT']
+
+  - name: dim_stock_symbols
+    description: Dimension table of stock symbols with metadata
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+          - unique
+      - name: first_quote_date
+        description: First quote date in dataset
+      - name: last_quote_date
+        description: Most recent quote date
+      - name: total_quotes
+        description: Total number of quotes
+
+  # Gold Layer
+  - name: fact_daily_stock_quotes
+    description: Daily stock quote facts optimized for Power BI real-time dashboard
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: quote_date
+        description: Date of quote
+        tests:
+          - not_null
+      - name: time_key
+        description: Time key in hhmm format for joining with dim_time dimension
+      - name: open_price
+        description: Opening price for the day
+      - name: high_price
+        description: Highest price for the day
+      - name: low_price
+        description: Lowest price for the day
+      - name: close_price
+        description: Closing price for the day
+        tests:
+          - not_null
+      - name: daily_return_percent
+        description: Daily return percentage
+      - name: volatility_category
+        description: Volatility level (LOW, MEDIUM, HIGH)
+        tests:
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH']
+      - name: price_direction
+        description: Price movement (UP, DOWN, FLAT)
+        tests:
+          - accepted_values:
+              values: ['UP', 'DOWN', 'FLAT']
+
+  - name: fact_stock_performance
+    description: Stock performance with moving averages and technical indicators
+    columns:
+      - name: symbol
+        description: Stock symbol
+        tests:
+          - not_null
+      - name: quote_date
+        description: Quote date
+        tests:
+          - not_null
+      - name: close_price
+        description: Closing price for the day (for line chart visualization)
+        tests:
+          - not_null
+      - name: ma_7day
+        description: 7-day moving average
+      - name: ma_30day
+        description: 30-day moving average
+      - name: ma_90day
+        description: 90-day moving average
+      - name: ytd_return_percent
+        description: Year-to-date return percentage
+      - name: momentum_30day_percent
+        description: 30-day momentum percentage
+
+  - name: dim_date
+    description: Date dimension table for time-based analysis (Standalone utility table)
+    columns:
+      - name: date_key
+        description: Date
+        tests:
+          - not_null
+          - unique
+      - name: year
+        description: Calendar year
+      - name: month
+        description: Calendar month (1-12)
+      - name: month_name
+        description: Month name
+      - name: quarter
+        description: Quarter (1-4)
+      - name: day_of_week
+        description: Day of week (1-7)
+      - name: day_name
+        description: Day name (Monday, etc.)
+      - name: dbt_loaded_at
+        description: When dbt loaded this record
+
+  - name: dim_time
+    description: Time dimension table for intraday time-based analysis (Standalone utility table)
+    columns:
+      - name: minute_number
+        description: Sequential minute number (1-1440)
+        tests:
+          - not_null
+          - unique
+      - name: time_and_day
+        description: Actual time value
+        tests:
+          - not_null
+      - name: time_key
+        description: Time key in hhmm format (e.g., 0900, 1530)
+        tests:
+          - not_null
+          - unique
+      - name: actual_time
+        description: Formatted time as HH:MI AM/PM (e.g., 09:00 AM)
+        tests:
+          - not_null
+      - name: hour
+        description: Hour of day (0-23)
+        tests:
+          - not_null
+      - name: hour_extended
+        description: Formatted hour as H AM/PM (e.g., 9 AM, 3 PM)
+        tests:
+          - not_null
+      - name: minute
+        description: Minute of hour (0-59)
+        tests:
+          - not_null
+      - name: ampm
+        description: AM or PM indicator
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['AM', 'PM']
+      - name: market_period
+        description: Market trading period (Pre-Market, Regular Hours, Post-Market, Closed)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Pre-Market', 'Regular Hours', 'Post-Market', 'Closed']
+      - name: is_market_open
+        description: Flag indicating if time is during regular market hours (1 = open, 0 = closed)
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+      - name: dbt_loaded_at
+        description: When dbt loaded this record
+
+

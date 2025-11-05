@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install dbt with SNOWFLAKE adapter
+RUN pip install --no-cache-dir \
+    dbt-core==1.7.4 \
+    dbt-snowflake==1.7.3 \
+    protobuf==4.25.3
+
+# Set working directory
+WORKDIR /dbt
+
+# Set environment variables
+ENV DBT_PROFILES_DIR=/dbt
+
+# Keep container running
+CMD ["tail", "-f", "/dev/null"]
