@@ -225,9 +225,9 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE.txt) for 
 
 ---
 
-## 📧 Contact
+## Contact
 
-- **LinkedIn**: [Link](#https://www.linkedin.com/in/sarach-sriklab-b1669715a/)
+- **LinkedIn**: [Sarach](https://www.linkedin.com/in/sarach-sriklab-b1669715a/)
 - **Email**: sarach.srik@gmail.com
 
 ---
