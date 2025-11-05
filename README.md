@@ -112,11 +112,9 @@ Both flows converge in Snowflake's medallion architecture for unified analytics.
 - `stg_historical_quotes_cleaned` - Standardized historical data
 
 **Gold (Analytics-Ready)**
-- `fact_daily_stock_quotes` - Daily OHLCV aggregations
-- `fact_stock_performance` - Returns, volatility, KPIs
+- `fact_daily_stock_quotes` - Final Table For Historical Dashboard Page
+- `fact_stock_performance` - Final Table For Real Time Dashboard Page
 - `dim_date` / `dim_time` - Date and time dimensions
-
-[View detailed data dictionary →](docs/DATA_MODELS.md)
 
 ---
 
@@ -155,13 +153,12 @@ Both flows converge in Snowflake's medallion architecture for unified analytics.
 
 - **Live monitoring**: Track stock prices in real-time
 - **Historical analysis**: Identify trends and patterns
-- **Backtesting**: Test trading strategies
 - **Risk metrics**: Calculate volatility and returns
 - **Comparative analysis**: Multi-stock performance comparison
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Adjust Data Refresh Rates
 
@@ -209,19 +206,18 @@ docker exec -it dbt_container dbt run --debug
 ## Roadmap
 
 - [ ] Add Streamlit dashboard
-- [ ] Implement data quality monitoring
 - [ ] Add CI/CD pipeline
 - [ ] Support additional data sources (news sentiment)
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see [LICENSE](LICENSE.txt) for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **[Jay](https://github.com/Jay61616/real-time-stocks-mds)** - Original project inspiration
 - **Finnhub.io** & **yfinance** - Stock market data APIs
@@ -231,8 +227,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 
 ## 📧 Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/real-time-stocks-pipeline/issues)
-- **LinkedIn**: [Your Profile](#https://www.linkedin.com/in/sarach-sriklab-b1669715a/)
+- **LinkedIn**: [Link](#https://www.linkedin.com/in/sarach-sriklab-b1669715a/)
 - **Email**: sarach.srik@gmail.com
 
 ---
@@ -240,5 +235,3 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 ⭐ **If this project helped you, please give it a star!**
 
 ---
-
-**Built with ❤️ using the Modern Data Stack**
